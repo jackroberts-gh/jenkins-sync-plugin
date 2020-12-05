@@ -181,27 +181,33 @@ public class CredentialsUtils {
 
                 boolean hasAddedCredential = s.addCredentials(Domain.global(), creds);
                 if (!hasAddedCredential) {
-                  logger.warning("Setting secret failed for secret with new Id " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
+                  logger.warning("Setting secret failed for secret with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                   logger.warning("Check if ID " + id + " is not already used.");
                   id = null;
                 } else {
                   s.removeCredentials(Domain.global(), existingOriginalCreds);
                   uidToSecretNameMap.put(secretUid, id);
                   secretNamespaceName = NamespaceName.create(secret);
-                  logger.info("Updated credential " + oldId + " with new Id " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
+                  logger.info("Updated credential " + oldId + " with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                 }
               } else {
-                if (oldId != null && existingCreds != null) {
+                if (existingCreds != null) {
+                  if (uidToSecretNameMap.containsValue(id)) {
+                    logger.warning("Setting secret failed for secret with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
+                    logger.warning(" Check if ID " + id + " is not already used.");
+                    id = null;
+                  } else {
                     s.updateCredentials(Domain.global(), existingCreds, creds);
                     uidToSecretNameMap.put(secretUid, id);
                     secretNamespaceName = NamespaceName.create(secret);
                     logger.info("Updated credential " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
+                  }
 
                 } else {
                   boolean hasAddedCredential = s.addCredentials(Domain.global(), creds);
 
                   if (!hasAddedCredential) {
-                    logger.warning("Update failed for secret with new Id " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
+                    logger.warning("Update failed for secret with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                     id = null;
                   } else {
                     uidToSecretNameMap.put(secretUid, id);
@@ -255,6 +261,8 @@ public class CredentialsUtils {
         if (secret != null) {
             String id = generateCredentialsName(secret.getMetadata().getNamespace(), secret.getMetadata().getName(), getSecretCustomName(secret));
             deleteCredential(id, NamespaceName.create(secret), secret.getMetadata().getResourceVersion());
+            logger.info("Removing secret name");
+            uidToSecretNameMap.remove(secret.getMetadata().getUid());
         }
     }
 
