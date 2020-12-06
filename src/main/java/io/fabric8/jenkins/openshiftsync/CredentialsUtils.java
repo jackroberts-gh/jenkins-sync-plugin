@@ -176,6 +176,7 @@ public class CredentialsUtils {
 
               NamespaceName secretNamespaceName = null;
 
+              // if existing secret but id (e.g. secret-name) has changed
               if (oldId != null && !oldId.equals(id)) {
                 Credentials existingOriginalCreds = lookupCredentials(oldId);
 
@@ -190,20 +191,20 @@ public class CredentialsUtils {
                   secretNamespaceName = NamespaceName.create(secret);
                   logger.info("Updated credential " + oldId + " with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                 }
-              } else {
-                if (existingCreds != null) {
-                  if (uidToSecretNameMap.containsValue(id)) {
+              } else { // if content of secret has changed
+                if (existingCreds != null) { // if an existing credential exists
+                  if (oldId == null) { // if oldId is null, another secret is trying to use an existing secrets name
                     logger.warning("Setting secret failed for secret with new ID " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                     logger.warning(" Check if ID " + id + " is not already used.");
                     id = null;
-                  } else {
+                  } else { // if oldIs isn't null, this is a regular secret update
                     s.updateCredentials(Domain.global(), existingCreds, creds);
                     uidToSecretNameMap.put(secretUid, id);
                     secretNamespaceName = NamespaceName.create(secret);
                     logger.info("Updated credential " + id + " from Secret " + secretNamespaceName + " with revision: " + metadata.getResourceVersion());
                   }
 
-                } else {
+                } else { // new credential added
                   boolean hasAddedCredential = s.addCredentials(Domain.global(), creds);
 
                   if (!hasAddedCredential) {
